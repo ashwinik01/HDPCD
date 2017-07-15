@@ -1,0 +1,50 @@
+import
+sqoop import --connect jdbc:mysql://master/poc --username root --table xxx --columns xxx --where xxx 
+--split-by xx --target-dir /hdfs
+
+sqoop import --connect jdbc:mysql://master/poc --username root --e 'SELECT XXX $CONDITIONS' --split-by XX --target-dir xxx
+--mysql-delimiters 
+--fields-terminated-by
+--lines-terminated-by
+
+sqoop import --connect jdbc:mysql://master/poc --username root
+--table xxx --columns xx
+--hive-table
+--hive-overwrite 
+--create-hive-table
+
+
+
+export (insert - update)
+sqoop export --table xx --update-key xx
+--export-dir HDFS
+ --connect jdbc:mysql://master/poc
+--update-mode allowinsert/updateonly
+--columns
+
+
+
+---------------------------------------------------------------------------------------------
+import to HDFS
+addinfo --append
+* import-all-tables
+* import with query
+* import --table --where
+* delimeters and path
+
+import to Hive
+
+overwrite,new table, existing table
+
+* import-all-table
+* import with query if it's a view
+* import --table -where
+* import to a previous table
+* import to create a new table 
+
+export
+* export insert and update from hdfs to sql
+
+
+
+
