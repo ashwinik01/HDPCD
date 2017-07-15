@@ -50,6 +50,8 @@ tblproperties ('transactional'='true');
 INSERT INTO TABLE student VALUES (1,"andres",10);
 UPDATE student SET id = 2 WHERE id = 1;
 
+EXPLAIN
+
 SELECT 
 orders.order_id,
 orders.order_date,
@@ -59,3 +61,25 @@ orders.order_status
 FROM orders 
 INNER JOIN customers
 ON (orders.order_customer_id = customers.customer_id) LIMIT 10;
+
+
+---------------------
+set hive.execution.engine = tez
+
+SELECT
+YEAR(o.order_date) as year,
+o.order_customer_id,
+cx.customer_fname,
+SUM(oi.order_item_quantity * oi.order_item_product_price) as total
+FROM orders o 
+INNER JOIN order_items oi ON (o.order_id=oi.order_item_id)
+LEFT JOIN customers cx ON (o.order_customer_id=cx.customer_id)
+GROUP BY YEAR(o.order_date),o.order_customer_id,cx.customer_fname;
+
+set hive.vectorized.execution.enabled = true;
+/* That property it's just for ORC tables*/
+
+
+
+
+
