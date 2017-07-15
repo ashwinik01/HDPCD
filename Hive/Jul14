@@ -1,0 +1,61 @@
+CREATE TABLE depart
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+AS 
+SELECT department_id,department_name FROM departments;
+
+INSERT INTO TABLE  departments
+SELECT * FROM depart;
+
+bzip filename
+gzip filename
+
+CREATE TABLE sample
+( info string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+LINES TERMINATED BY '\n';
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/sample.txt.gz'
+INTO TABLE sample;
+
+CREATE TABLE cars (id int,name string,city string,country string, value int)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+WITH SERDEPROPERTIES ("separatorChar" = ",")
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/duplicates.csv'
+OVERWRITE INTO TABLE cars;
+
+
+CREATE TABLE customers_orc
+COMMENT 'TESTING HDPCD'
+ROW FORMAT DELIMITED
+  FIELDS TERMINATED BY '\u0001'
+  LINES TERMINATED BY '\n'
+STORED AS ORC
+AS
+SELECT customer_id, customer_fname, customer_lname, customer_email, customer_street,customer_city FROM customers;
+
+CREATE TABLE student
+( id int, name string, grade int)
+CLUSTERED BY (id) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS ORC
+tblproperties ('transactional'='true');
+
+
+INSERT INTO TABLE student VALUES (1,"andres",10);
+UPDATE student SET id = 2 WHERE id = 1;
+
+SELECT 
+orders.order_id,
+orders.order_date,
+orders.order_customer_id,
+customers.customer_lname,
+orders.order_status 
+FROM orders 
+INNER JOIN customers
+ON (orders.order_customer_id = customers.customer_id) LIMIT 10;
