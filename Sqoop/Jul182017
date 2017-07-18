@@ -1,0 +1,24 @@
+sqoop list-databases --connect jdbc:mysql://xxxxxxx --username retail_dba --password itversity
+sqoop list-tables --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity --e 'select * from department'
+
+##Import data from a table in a relational database into HDFS
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity --table orders --target-dir /user/ingenieroandresangel/sqoop --fields-terminated-by '|' -m 1
+
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity --query 'select year(order_date) as year,department_name,sum(revenue_per_day) from revenue where department_name='Apparel' and $CONDITIONS group by year(order_date),department_name'
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity --query 'select order_date,department_name,revenue_per_day from revenue where revenue_per_day> 10000 '
+
+
+##Import the results of a query from a relational database into HDFS
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity --query 'select a.order_id,a.order_date,b.order_item_id,b.order_item_quantity from orders a inner join order_items b on (a.order_id=b.order_item_id) where $CONDITIONS' --split-by a.order_id --target-dir /user/ingenieroandresangel/sqoop/revenue --fields-terminated-by '|' -m 1
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity --table revenue --columns department_name,revenue_per_day --where "department_name='Apparel'" --target-dir /user/ingenieroandresangel/sqoop/revenue --fields-terminated-by '|' -m 1
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity --table revenue --columns department_name,revenue_per_day --where "department_name='Footwear'" --target-dir /user/ingenieroandresangel/sqoop/revenue --fields-terminated-by '|' --append -m 1
+
+
+
+#Import a table from a relational database into a new or existing Hive table
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table orders --hive-import --hive-database poc --create-hive-table  \
+--split-by order_id -m 1 --direct
+
