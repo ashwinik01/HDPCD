@@ -30,3 +30,8 @@ sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username re
 
 sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
 --e 'select * from student'
+
+##Insert or update data from HDFS into a table in a relational database
+sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table student --update-key id  --update-mode allowinsert  --export-dir /user/ingenieroandresangel/sqoop/student.txt --fields-terminated-by '|' \
+--lines-terminated-by '\n' -m 1
