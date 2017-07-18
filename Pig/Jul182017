@@ -1,0 +1,5 @@
+pig -x
+pig -x local -- means from local file system
+pig -x tezsdsdsdas
+pig -x tez -useHCatalog
+
