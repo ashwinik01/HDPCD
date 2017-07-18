@@ -17,8 +17,16 @@ sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username 
 
 
 
-#Import a table from a relational database into a new or existing Hive table
+##Import a table from a relational database into a new or existing Hive table
 sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
---table orders --hive-import --hive-database poc --create-hive-table  \
+--table orders --hive-import --hive-database poc --hive-table orders_sqoop --create-hive-table  \
 --split-by order_id -m 1 --direct
 
+
+
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'CREATE TABLE student (id int, name varchar(20),cours_id varchar(20))'
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'select * from student'
