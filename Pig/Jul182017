@@ -3,3 +3,37 @@ pig -x local -- means from local file system
 pig -x tezsdsdsdas
 pig -x tez -useHCatalog
 
+## Load data into a Pig relation without a schema
+ stations = LOAD '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv' USING PigStorage(',');
+ HISTORY
+ ##Load data into a Pig relation with a schema
+station_s = LOAD '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv' USING PigStorage(',') AS (code:chararray,name:chararray, la:float, lo:float);
+
+##Load data from a Hive table into a Pig relation
+products = LOAD 'poc.products' USING org.apache.hive.hcatalog.pig.HCatLoader();
+
+##Use Pig to transform data into a specified format
+products_fl = FILTER products_h BY product_id==11;
+product_cl = FOREACH products_fl GENERATE $0,$2,$4, 5 as (qty:double);
+product_cl_null = FILTER product_cl BY $2 is null;
+products_gr = GROUP product_cl BY product_id;
+
+product_result = FOREACH products_gr {
+            total = FOREACH product_cl GENERATE $2 * $3;
+            total_product = SUM(total);
+            GENERATE  group,total_product;
+            };
+
+              
+product_r = FOREACH products_gr {
+            max_price = MAX(product_cl.product_price);
+            GENERATE  group,max_price,SUM(product_cl.product_price);
+            };
+
+
+products_h_gr = GROUP products_h BY product_category_id;
+products_gr_re = FOREACH products_h_gr GENERATE group, AVG(products_h.product_price);
+
+##Transform data to match a given Hive schema
+products_h = LOAD '/apps/hive/warehouse/poc.db/products' USING PigStorage('\u0001') 
+AS (product_id:int,product_category_id:int,product_name:chararray,product_description:chararray,product_price:double,product_image:chararray);
