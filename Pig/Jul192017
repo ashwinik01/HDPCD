@@ -1,1 +1,30 @@
-sd
+## Group the data of one or more Pig relations
+stations = LOAD '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv' USING PigStorage(',') 
+AS (code:chararray,name:chararray,la:float,lo:float);
+
+aug = LOAD '/user/ingenieroandresangel/datasets/OD_2015-07_nh.csv' USING PigStorage (',')
+AS (startdate:datetime,startstationcode:chararray,enddate:datetime,endstationcode:chararray,duration_sec:int,is_member:int);
+
+aug_station_gr = COGROUP stations by code, aug by startstationcode;
+aug_summary = FOREACH aug_station_gr {
+              trips = COUNT(aug);
+              GENERATE group,FLATTEN(stations.name),trips;
+              };                           
+aug_station_gr_ck = LIMIT aug_station_gr 10;
+
+aug_day = FOREACH aug GENERATE GetDay(startdate) as day:int,startstationcode,duration_sec;
+aug_s_day = JOIN aug_day by startstationcode LEFT OUTER, stations by code;
+aug_s_day_cl = FOREACH aug_s_day GENERATE $1,$4,$0,$2;
+aug_s_day_gr = GROUP aug_s_day_cl BY ($0,$1);
+aug_s_day_gr_avg = FOREACH aug_s_day_gr GENERATE FLATTEN(group),AVG(aug_s_day_cl.duration_sec);
+
+## Use Pig to remove records with null values from a relation
+cars = LOAD '/user/ingenieroandresangel/datasets/duplicates.csv' USING PigStorage(',')
+AS (code:int,car:chararray,city:chararray,country:chararray,price:double);
+cars_grall = GROUP cars ALL;
+cars_cnt = FOREACH cars_grall GENERATE COUNT(cars);
+
+cars_nnull = FILTER cars BY city is not null;
+
+cars_grall_ck = GROUP cars_nnull ALL;
+cars_ck = FOREACH cars_grall_ck GENERATE COUNT(cars_nnull);
