@@ -28,3 +28,66 @@ cars_nnull = FILTER cars BY city is not null;
 
 cars_grall_ck = GROUP cars_nnull ALL;
 cars_ck = FOREACH cars_grall_ck GENERATE COUNT(cars_nnull);
+
+##Store the data from a Pig relation into a folder in HDFS
+
+STORE cars_nnull INTO '/user/ingenieroandresangel/pig' USING PigStorage(',');
+
+##Store the data from a Pig relation into a Hive table
+##First at all the table should exit in Hive before load this data
+
+STORE cars_nnull INTO 'poc.cars' USING org.apache.hive.hcatalog.pig.HCatStorer ();
+
+##Sort the output of a Pig relation
+
+cars_srt_desc = ORDER cars_nnull by price DESC;
+
+## Remove the duplicate tuples of a Pig relation
+cars_uni = DISTINCT cars_nnull;
+
+##Specify the number of reduce tasks for a Pig MapReduce job
+
+set default_parallel 2;
+cars_uni_nnull = FILTER cars_uni BY price is not null;
+
+## Join two datasets using Pig
+
+stations_join = JOIN stations by code, aug by startstationcode;
+sta_ck = FOREACH stations_join GENERATE $1, $5;
+sta_disc = DISTINCT sta_ck;
+
+stations_leftjoin = JOIN stations by code LEFT OUTER, aug by startstationcode;
+s_left = FOREACH stations_leftjoin GENERATE $1, $5;
+s_left_d = DISTINCT s_left;
+
+stations_rightjoin = JOIN stations by code RIGHT OUTER, aug by startstationcode;
+s_right = FOREACH stations_rightjoin GENERATE $1, $5;
+s_right_d = DISTINCT s_right;
+
+## Perform a replicated join using Pig
+
+s_leftj_replica = JOIN stations by code LEFT OUTER, aug by startstationcode USING 'replicated';
+
+##Run a Pig job using Tez
+
+Pig -x tez script.pig
+
+##Within a Pig script, register a JAR file of User Defined Functions
+##Within a Pig script, define an alias for a User Defined Function
+##Within a Pig script, invoke a User Defined Function
+
+jar tvf piggybank-0.12.0.jar
+
+set default_parallel 3;
+REGISTER /home/ingenieroandresangel/piggybank-0.12.0.jar;
+DEFINE LO org.apache.pig.piggybank.evaluation.string.LOWER;
+DEFINE  lenghudf org.apache.pig.piggybank.evaluation.string.LENGTH;
+
+aug = LOAD '/user/ingenieroandresangel/datasets/OD_2015-07_nh.csv' USING PigStorage (',')
+AS (startdate:datetime,startstationcode:chararray,enddate:datetime,endstationcode:chararray,duration_sec:int,is_member:int);
+
+aug_udf = FOREACH aug GENERATE (int) lenghudf($1) as len:int, $1;
+aug_udf = FOREACH aug GENERATE lenghudf($1) as len, $1;
+au_ck = LIMIT aug_udf 10;
+
+
