@@ -1,1 +1,91 @@
-d
+## Define a Hive-managed table
+CREATE TABLE student 
+( id int,
+name varchar(50),
+cours_id varchar(4) )
+STORED AS TEXTFILE;
+
+## Define a Hive external table
+CREATE EXTERNAL TABLE cours
+( cours_id varchar(4),
+name_course varchar(50),
+hours int )
+STORED AS PARQUET;
+
+CREATE EXTERNAL TABLE  cours
+( cours_id varchar(4),
+name_course varchar(50),
+hours int )
+STORED AS TEXTFILE
+LOCATION '/user/ingenieroandresangel/orders';
+
+
+
+## Define a partitioned Hive table
+CREATE TABLE scripts
+( id int,
+cours_id varchar(4),
+student_id int,
+score double )
+PARTITIONED BY (grade int, category string)
+STORED AS AVRO;
+
+insert into scripts PARTITION (grade = 7, category = 'A') values (1,'PG01',1,3.5),(2,'PG01',2,4.5) ;
+
+## Define a bucketed Hive table
+CREATE TABLE student 
+(
+student_id int,
+name varchar(50),
+cours_id  varchar(4)
+)
+CLUSTERED BY(student_id) INTO 3 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS RCFILE;
+
+
+## Define a Hive table from a select query
+CREATE TABLE customers_temp
+STORED AS ORC
+AS 
+SELECT * FROM customers;
+
+from customers
+insert into table customers_temp 
+select customer_id,customer_fname,null,null,null,null,null,null,null;
+
+## Define a Hive table that uses the ORCFile format
+CREATE TABLE employees
+( id_empl int,
+name string,
+department string,
+salary double )
+PARTITIONED BY (company string)
+CLUSTERED BY(id_empl) SORTED BY(name) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC;
+
+## Create a new ORCFile table from the data in an existing non-ORCFile Hive table
+CREATE TABLE cars_orc
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC
+LOCATION '/user/ingenieroandresangel/orders'
+AS
+select * from cars;
+
+## Specify the storage format of a Hive table
+CREATE TABLE departements
+(id_dept int, id_emp int)
+STORED AS SEQUENCEFILE;
+TEXTFILE
+AVRO
+RCFILE
+ORC
+PARQUET
+SEQUENCEFILE
