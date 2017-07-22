@@ -1,1 +1,62 @@
-d
+## Specify the delimiter of a Hive table
+CREATE TABLE process_test
+( id_process int,
+name string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '|'
+LINES TERMINATED BY '\n'
+NULL DEFINED AS '-1'
+STORED AS AVRO;
+
+## Load data into a Hive table from a local directory
+CREATE TABLE student (
+id int,
+name string,
+course_id string )
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '|'
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/student.txt'
+OVERWRITE INTO TABLE student;
+
+## Load data into a Hive table from an HDFS directory
+CREATE TABLE student(
+id int,
+name string,
+cours string,
+grade string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/user/ingenieroandresangel/datasets/people_exam.txt'
+OVERWRITE INTO TABLE student;
+
+## Load data into a Hive table as the result of a query
+CREATE TABLE orders_q 
+STORED AS TEXTFILE
+AS
+SELECT * FROM orders;
+
+CREATE TABLE orders_q
+( id int, order_date string,order_customer_id int,order_status string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+from orders
+INSERT INTO TABLE orders_q
+SELECT order_id , order_date ,order_customer_id ,order_status;
+
+## Load a compressed data file into a Hive table
+gzip file.extention -- not txt files
+SET hive.exec.compress.output=true;
+CREATE TABLE student (row_id string) STORED AS TEXTFILE;
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/sample.csv.gz' OVERWRITE INTO TABLE student;
+
+
