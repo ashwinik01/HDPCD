@@ -1,0 +1,6 @@
+## Update a row in a Hive table
+CREATE TABLE test_trans ( id int, city_code string, city_name string, country_code string, country_name string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+tblproperties 
