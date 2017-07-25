@@ -1,6 +1,54 @@
 ## Update a row in a Hive table
+##checks
+set hive.txn.manager;
+set hive.support.concurrency = true;
+set hive.enforce.bucketing=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DbTxnManager;
+set hive.compactor.initiator.on=true;
+set hive.compactor.worker.threads=1;
+
+create table hive_tr (i int, j string)
+clustered by (i) into 4 buckets
+stored as orc
+tblproperties ('transactional'='true');
+
 CREATE TABLE test_trans ( id int, city_code string, city_name string, country_code string, country_name string)
-ROW FORMAT DELIMITED
-FIELDS TERMINATED BY ','
-LINES TERMINATED BY '\n'
-tblproperties 
+CLUSTERED BY(id)  INTO 2 BUCKETS
+STORED AS ORC
+tblproperties ('transactional'='true'); 
+
+##Insert a new row into a Hive table
+INSERT INTO TABLE test_trans values(1,'AB01','Montreal','01','Canada');
+
+##Update a row in a Hive table
+update test_trans 
+set city_name = 'Boston' 
+where id = 1;
+
+##Delete a row from a Hive table
+delete from test_trans where id =1;
+
+
+##Join two Hive tables
+SELECT order_id,order_date,customer_fname,customer_city FROM 
+orders ord left join customers cx ON  ord.order_customer_id=cx.customer_id;
+
+##Run a Hive query using Tez
+set hive.execution.engine;
+set hive.execution.engine =tez;
+
+##Run a Hive query using vectorization
+set hive.vectorized.execution.enabled = true;
+
+
+##Output the execution plan for a Hive query
+EXPLAIN 
+SELECT order_id,order_date,customer_fname,customer_city FROM 
+orders ord left join customers cx ON  ord.order_customer_id=cx.customer_id;
+
+##Use a subquery within a Hive query
+SELECT orh.order_id,orh.order_date,ori.o_id,ori.product_name FROM orders orh INNER JOIN
+(SELECT oit.order_item_id,oit.order_item_id as o_id,pr.product_name,oit.order_item_quantity FROM
+order_items oit INNER JOIN products pr ON oit.order_item_id= pr.product_id) ori ON orh.order_id=ori.order_item_id
+ORDER BY 2 DESC;
