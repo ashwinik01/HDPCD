@@ -1,0 +1,25 @@
+## Import data from a table in a relational database into HDFS
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity --table orders \
+--where order_id > 68800 --target-dir /user/ingenieroandresangel/sqoop/  -m 2
+
+##Import the results of a query from a relational database into HDFS
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--e 'SELECT order_id,year(order_date) as year, month(order_date) as month,order_status FROM orders WHERE $CONDITIONS and order_status="COMPLETE"' \
+--target-dir /user/ingenieroandresangel/sqoop --split-by order_id --direct -m 2
+
+
+##Import a table from a relational database into a new or existing Hive table
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--table departments  --where department_id > 3 --hive-import --hive-database poc --create-hive-table --hive-table departments 
+
+##Insert or update data from HDFS into a table in a relational database
+sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--export-dir /user/ingenieroandresangel/datasets/student.txt --fields-terminated-by ',' --lines-terminated-by '\n' \
+--update-key id --table student --update-mode allowinsert  -m 1
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'ALTER TABLE student ADD PRIMARY KEY (id)'
+ 
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'select * from student'
