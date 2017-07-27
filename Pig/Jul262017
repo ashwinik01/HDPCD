@@ -1,0 +1,40 @@
+##Load data into a Pig relation without a schema
+stations = LOAD '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv' USING PigStorage (',');
+
+##Load data into a Pig relation with a schema
+schools = LOAD '/user/ingenieroandresangel/datasets/Schools_noheaders.csv'
+USING PigStorage (',')
+AS (schoolID:chararray,schoolName:chararray,schoolCity:chararray,schoolState:chararray,schoolNick:chararray);
+
+## Load data from a Hive table into a Pig relation
+cars = LOAD 'poc.cars' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+
+## Use Pig to transform data into a specified format
+jul = LOAD '/user/ingenieroandresangel/datasets/OD_2015-07_nh.csv' USING PigStorage (',')
+AS (start_date:datetime,start_station_code:chararray,end_date:datetime,end_station_code:chararray,duration_sec:double,is_member:int);
+
+jul_cl = FOREACH jul GENERATE GetDay(start_date) as (day:int),duration_sec;
+jul_gr = GROUP jul_cl BY day;
+jul_re = FOREACH jul_gr {
+        rows_q = COUNT(jul_cl.duration_sec);
+        GENERATE group,rows_q,AVG(jul_cl.duration_sec);
+    };
+ 
+ /* Note: is not possible use created columns to apply functions because it's a current bug 
+    https://issues.apache.org/jira/browse/PIG-1798 */
+    
+orders = LOAD 'poc.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+describe orders;
+orders_cl = FOREACH orders GENERATE order_item_product_id,order_item_quantity,order_item_product_price;
+orders_gr = GROUP orders_cl BY order_item_product_id;
+orders_re = FOREACH orders_gr {
+             total_price = FOREACH orders_cl GENERATE (order_item_quantity * order_item_product_price);
+             qty_prod = COUNT(orders_cl.order_item_quantity);
+             total = SUM(total_price);      
+             GENERATE group,qty_prod,total;
+       };
+
+orders_sort = ORDER orders_re BY $1 DESC;
+orders_ck = LIMIT orders_sort 10;
+
+
