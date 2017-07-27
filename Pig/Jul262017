@@ -37,4 +37,26 @@ orders_re = FOREACH orders_gr {
 orders_sort = ORDER orders_re BY $1 DESC;
 orders_ck = LIMIT orders_sort 10;
 
+## Transform data to match a given Hive schema
+orders_h = LOAD ' hdfs://nn01.itversity.com:8020/apps/hive/warehouse/poc.db/orders' USING PigStorage('\u0001')
+AS (order_id:int,order_date:datetime,order_customer_id:int,order_status:chararray);
 
+##Group the data of one or more Pig relations
+stations = LOAD '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv' USING PigStorage (',')
+AS (code:chararray,name:chararray,latitude:double,longitude:double);
+
+stations_jul_gr = COGROUP stations BY code, jul BY start_station_code;
+station_jul_cl = FOREACH stations_jul_gr GENERATE group,stations.name,jul.end_station_code,jul.duration_sec;
+station_jul_cl = FOREACH stations_jul_gr {
+                count_rows = COUNT_STAR(stations.name);
+                avg_duration = AVG(jul.duration_sec);
+                GENERATE group,FLATTEN(stations.name),count_rows,avg_duration;
+            };
+station_check = LIMIT station_jul_cl 10;
+
+## Use Pig to remove records with null values from a relation
+cars = LOAD 'poc.cars' USING org.apache.hive.hcatalog.pig.HCatLoader (); 
+cars_fl = FILTER cars BY price IS NOT NULL;
+
+## Store the data from a Pig relation into a folder in HDFS
+STORE cars_fl INTO '/user/ingenieroandresangel/pig/cars';
