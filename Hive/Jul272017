@@ -1,0 +1,18 @@
+## Define a Hive-managed table
+set hive.execution.engine=tez;
+CREATE TABLE student
+( id_student int, name varchar(20), cours_id string, balance double)
+STORED AS TEXTFILE;
+
+## Define a Hive external table
+CREATE EXTERNAL TABLE cours
+(cours_id string, name varchar(50), schedule string, duration int)
+STORED AS TEXTFILE;
+
+##Define a partitioned Hive table
+CREATE TABLE enroll
+( enroll_id int, id_student int, date_enroll date, location varchar(30))
+PARTITIONED BY(country string, city string)
+STORED AS ORC;
+
+## Define a bucketed Hive table
