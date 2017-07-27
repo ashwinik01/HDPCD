@@ -23,7 +23,7 @@ jul_re = FOREACH jul_gr {
  /* Note: is not possible use created columns to apply functions because it's a current bug 
     https://issues.apache.org/jira/browse/PIG-1798 */
     
-orders = LOAD 'poc.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+orders = LOAD 'poc.orders' USING org.apache.hive.hcatalog.pig.HCatLoader ();
 describe orders;
 orders_cl = FOREACH orders GENERATE order_item_product_id,order_item_quantity,order_item_product_price;
 orders_gr = GROUP orders_cl BY order_item_product_id;
@@ -60,3 +60,55 @@ cars_fl = FILTER cars BY price IS NOT NULL;
 
 ## Store the data from a Pig relation into a folder in HDFS
 STORE cars_fl INTO '/user/ingenieroandresangel/pig/cars';
+
+##Sort the output of a Pig relation
+orders_sort = ORDER orders BY order_item_id DESC;
+orders_ck = LIMIT orders_sort 10;
+
+##Remove the duplicate tuples of a Pig relation
+cars_gr = GROUP cars BY code;
+cars_uniq = FOREACH cars_gr {
+        code_uni = DISTINCT cars.code;
+        car_uni = DISTINCT cars.car;
+        GENERATE group,COUNT(cars.code),COUNT(code_uni);
+        };
+        
+## Specify the number of reduce tasks for a Pig MapReduce job
+set default_parallel 3;
+
+##Join two datasets using Pig
+order_items= LOAD 'POC.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+
+orders_det = JOIN orders by order_id LEFT OUTER, order_items by order_item_id;
+orders_det2 = JOIN orders by order_id, order_items by order_item_id;
+orders_det3 = JOIN orders by order_id RIGHT OUTER, order_items by order_item_id;
+
+##Perform a replicated join using Pig
+Perform a replicated join with the USING clause (see JOIN (inner) and JOIN (outer)).
+In this example, a large relation is joined with two smaller relations. Note that the large relation comes first
+followed by the smaller relations;
+and, all small relations together must fit into main memory, otherwise an error is generated.
+
+orders_det = JOIN orders by order_id LEFT OUTER, order_items by order_item_id  USING 'replicated';
+
+##Run a Pig job using Tez
+pig -x tez script.pig
+
+##Within a Pig script, register a JAR file of User Defined Functions
+##Within a Pig script, define an alias for a User Defined Function
+##Within a Pig script, invoke a User Defined Function
+
+##Checke the available functions in the java file
+jar tvf file.jar
+
+REGISTER '/home/ingenieroandresangel/piggybank-0.12.0.jar';
+DEFINE MAJ  org.apache.pig.piggybank.evaluation.string.UPPER;
+
+stations = LOAD '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv' USING PigStorage (',')
+AS (code:chararray,name:chararray,latitude:double,longitude:double);
+
+s_checking = FOREACH stations GENERATE code,MAJ(name);
+
+dump s_checking;
+
+
