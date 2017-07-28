@@ -16,3 +16,162 @@ PARTITIONED BY(country string, city string)
 STORED AS ORC;
 
 ## Define a bucketed Hive table
+CREATE TABLE teachers
+( id_teacher int, name string, cours_id string )
+CLUSTERED BY(id_teacher) SORTED BY(name) INTO 2 BUCKETS
+STORED AS AVRO;
+
+## Define a Hive table from a select query
+CREATE TABLE product_query
+AS 
+SELECT product_id,product_category_id,product_name,product_description,product_price FROM products;
+
+##Define a Hive table that uses the ORCFile format
+CREATE TABLE teachers
+( id_teacher int, name string, cours_id string )
+PARTITIONED BY(country string, city string)
+CLUSTERED BY(id_teacher) SORTED BY(name) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+NULL DEFINED AS '-1'
+STORED AS ORC;
+
+##Create a new ORCFile table from the data in an existing non-ORCFile Hive table
+CREATE TABLE categories_orc
+STORED AS ORC
+AS
+SELECT * FROM categories;
+
+##Specify the storage format of a Hive table
+
+create table test(id int, name string)
+STORED AS TEXTFILE;
+
+create table test_avro (id int,name string)
+STORED AS AVRO;
+
+create table test_rc (id int,name string)
+STORED AS RCFILE;
+
+create table test_orc (id int, name string)
+STORED AS ORC;
+
+create table test_sequence (id int, name string)
+STORED AS SEQUENCEFILE;
+
+create table test_parquet (id int, name string)
+STORED AS PARQUET;
+
+## Specify the delimiter of a Hive table
+CREATE TABLE current_inv
+(id_product int, date_inv date, qty int, price_prod double)
+PARTITIONED BY(location string)
+CLUSTERED BY(id_product) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+NULL DEFINED AS '0'
+STORED AS ORC
+tblproperties ('transactional'='true');
+
+
+##Load data into a Hive table from a local directory
+
+CREATE TABLE Jul
+( start_date date,start_station_code int,end_date date,end_station_code int,duration_sec double ,is_member int)
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/noheaders/OD_2015-07_nh.csv'
+OVERWRITE INTO TABLE Jul ;
+
+CREATE TABLE city_exam
+(code string, city string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/city_exam.txt'
+OVERWRITE INTO TABLE city_exam;
+
+##Load data into a Hive table from an HDFS directory
+CREATE TABLE student
+(id int, name string, code string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/user/ingenieroandresangel/datasets/student.txt'
+OVERWRITE INTO TABLE student;
+
+## Load data into a Hive table as the result of a query
+CREATE TABLE products_temp(
+product_id int, p_cat_id int,p_name string,product_descrip string)
+STORED AS TEXTFILE;
+
+from products
+insert into table products_temp
+select product_id,product_category_id,product_name,product_description;
+
+##Load a compressed data file into a Hive table
+
+set hive.exec.compress.output=true;
+
+CREATE TABLE sample
+(row_info string)
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/sample.csv.gz'
+OVERWRITE INTO TABLE sample;
+
+##Update a row in a Hive table
+##Delete a row from a Hive table
+##Insert a new row into a Hive table
+
+CREATE TABLE test_trans
+(id int, name string)
+CLUSTERED BY(id) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC
+tblproperties ('transactional'='true');
+
+INSERT INTO TABLE test_trans VALUES (1,'andres'),(2,'julieta'),(3,'carlo');
+--Updates not supported in a column clustered
+UPDATE test_trans
+SET name='juan' 
+WHERE name='julieta';
+
+DELETE FROM test_trans
+WHERE id=1;
+
+## Run a Hive query using Tez
+set hive.execution.engine=tez;
+
+## Join two Hive tables
+##Output the execution plan for a Hive query
+
+EXPLAIN
+SELECT
+a.product_id,
+a.p_cat_id,
+b.category_name,
+a.product_descrip
+FROM products_temp a INNER JOIN categories b ON a.p_cat_id=b.category_id;
+
+##Use a subquery within a Hive query
+SELECT 
+ord_det.order_id,
+ord_det.order_date,
+ord_det.customer_fname,
+ord_i.order_item_id
+FROM
+(SELECT ord.order_id,ord.order_date,cus.customer_fname FROM orders ord INNER JOIN customers cus ON ord.order_customer_id=cus.customer_id) ord_det
+INNER JOIN order_items ord_i ON ord_det.order_id=ord_i.order_item_id;
+
+
+
+
