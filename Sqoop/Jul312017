@@ -1,0 +1,11 @@
+## Import data from a table in a relational database into HDFS
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity --table customers \
+--where customer_id > 10000 --target-dir /user/ingenieroandresangel/sqoop/customers -m 1
+
+##Import the results of a query from a relational database into HDFS
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity --query \
+'SELECT a.order_id,a.order_date,a.order_status,b.customer_fname FROM orders a INNER JOIN customers b ON a.order_customer_id=b.customer_id WHERE $CONDITIONS and a.order_customer_id >1000' \
+--target-dir /user/ingenieroandresangel/sqoop/query --split-by order_customer_id -m 1
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity --query \
+'describe customers'
