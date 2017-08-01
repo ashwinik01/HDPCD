@@ -1,0 +1,41 @@
+## Import data from a table in a relational database into HDFS
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity --table departments \
+--where 'department_id >= 2' --target-dir /user/ingenieroandresangel/sqoop/depart --split-by department_id -m 1 
+
+##Import the results of a query from a relational database into HDFS
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--e 'SELECT a.order_id,a.order_date,a.order_status,b.customer_fname FROM orders a INNER JOIN customers b ON a.order_customer_id=b.customer_id WHERE $CONDITIONS and a.order_id >= 11000' \
+--split-by order_customer_id --target-dir /user/ingenieroandresangel/sqoop/query -m 1
+
+##Import a table from a relational database into a new or existing Hive table
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--table departments --where department_id=2 --hive-import --hive-database poc --hive-table departments_sqoop  \
+--target-dir /user/ingenieroandresangel/sqoop/dep_hive --split-by department_id -m 1
+
+
+CREATE TABLE `departments_sqoop`(
+  `department_id` int,
+  `department_name` string)
+COMMENT 'Imported by sqoop on 2017/08/01 17:33:29'
+ROW FORMAT DELIMITED
+  FIELDS TERMINATED BY '\u0001'
+  LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+
+
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--table departments --where 'department_id>=2' --hive-import --hive-database poc --hive-table departments_sqoop  --incremental append \
+--check-column department_id --last-value 2 --target-dir /user/ingenieroandresangel/sqoop/dep_hive --split-by department_id -m 1
+
+## Insert or update data from HDFS into a table in a relational database
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'CREATE TABLE student_export (id int primary key not null, name varchar(20) null, code varchar(50) null)'
+
+sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--export-dir /user/ingenieroandresangel/datasets/student.txt --table student_export --update-key id --update-mode allowinsert 
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'select * from  student_export'
+
