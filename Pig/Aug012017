@@ -1,0 +1,26 @@
+##Load data into a Pig relation without a schema
+stations = LOAD '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv' USING PigStorage (',');
+
+##Load data into a Pig relation with a schema
+stations_s = LOAD '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv' USING PigStorage (',')
+AS (code_s:int, name:chararray,la:double,lo:double);
+
+##Load data from a Hive table into a Pig relation
+orders = LOAD 'poc.orders' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+
+##Use Pig to transform data into a specified format
+
+orders_cl = FOREACH orders GENERATE $0,GetYear(ToDate($1)) as (year:int),$2,$3;
+orders_gr = GROUP orders_cl BY year;
+orders_t = FOREACH orders_gr {
+          qtystats = COUNT(orders_cl.order_status);
+          status = DISTINCT orders_cl.order_status;
+          GENERATE group,status,qtystats;
+          };
+orders_gr_v2 = GROUP orders_cl BY (year,order_status);
+result_v2 = FOREACH orders_gr_v2 GENERATE FLATTEN(group),COUNT(orders_cl);
+
+##Transform data to match a given Hive schema
+order_items = LOAD 'hdfs://nn01.itversity.com:8020/apps/hive/warehouse/poc.db/order_items' USING PigStorage('\u0001')
+AS (order_item_ind:int,order_item_order_id:int,order_item_quantity:int,subtotal:double,product_price:double);
+          
