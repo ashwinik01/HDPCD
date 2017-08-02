@@ -24,3 +24,70 @@ result_v2 = FOREACH orders_gr_v2 GENERATE FLATTEN(group),COUNT(orders_cl);
 order_items = LOAD 'hdfs://nn01.itversity.com:8020/apps/hive/warehouse/poc.db/order_items' USING PigStorage('\u0001')
 AS (order_item_ind:int,order_item_order_id:int,order_item_quantity:int,subtotal:double,product_price:double);
           
+## Group the data of one or more Pig relations
+
+order_items_cogr = COGROUP orders_cl by order_id, order_items by order_item_order_id;
+cogr_result = FOREACH order_items_cogr {
+          qtyhead = COUNT_STAR(orders_cl);
+          qtybody = SUM(order_items.product_price);
+          GENERATE  group,qtyhead,qtybody;
+          };
+cogr_checkingr = LIMIT cogr_result 10;
+
+##Use Pig to remove records with null values from a relation
+duplicat_null = LOAD '/user/ingenieroandresangel/datasets/duplicates.csv' USING PigStorage(',')
+AS (id:int,brand:chararray,city:chararray,country:chararray,value:double);
+
+nonull_result = FILTER  duplicat_null BY (value IS NOT NULL) AND (city IS NOT NULL);
+
+##Store the data from a Pig relation into a folder in HDFS
+STORE nonull_result INTO '/user/ingenieroandresangel/pig/nonull';
+
+##Store the data from a Pig relation into a Hive table
+STORE nonull_result INTO 'poc.cars' USING org.apache.hive.hcatalog.pig.HCatStorer ();
+
+##Sort the output of a Pig relation
+nonnull_sort = ORDER nonull_result BY value DESC;
+
+## Remove the duplicate tuples of a Pig relation
+nonduplic = DISTINCT nonnull_sort;
+
+## Specify the number of reduce tasks for a Pig MapReduce job
+##Run a Pig job using Tez
+##Join two datasets using Pig
+set default_parallel 3;
+
+stations = LOAD '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv' USING PigStorage(',')
+AS (code:int,name:chararray,latitude:double,longitude:double);
+
+jul = LOAD '/user/ingenieroandresangel/datasets/OD_2015-07_nh.csv' USING PigStorage(',')
+AS (start_date:datetime,start_station_code:int,end_date:datetime,end_station_code:int,duration_sec:int,is_member:int);
+
+station_jul_nj = JOIN stations BY code, jul BY start_station_code;
+station_jul_nj_cl = FOREACH station_jul_nj GENERATE stations::name,jul::start_station_code;
+station_jul_nj_cl_lim = LIMIT station_jul_nj_cl 5;
+dump station_jul_nj_cl_lim;
+
+station_jul_lj = JOIN stations BY code  LEFT OUTER, jul BY start_station_code USING 'replicated';
+station_jul_lj_lm = LIMIT station_jul_lj 5;
+dump station_jul_lj_lm;
+station_jul_rj = JOIN stations BY code RIGHT OUTER, jul BY start_station_code USING 'repicated';
+station_jul_rj_lm = LIMIT station_jul_rj 5;
+dump station_jul_rj_lm;
+
+
+##Within a Pig script, register a JAR file of User Defined Functions
+##Within a Pig script, define an alias for a User Defined Function
+##Within a Pig script, invoke a User Defined Function
+set default_parallel 4;
+
+REGISTER  '/home/ingenieroandresangel/piggybank-0.12.0.jar';
+DEFINE andresupper org.apache.pig.piggybank.evaluation.string.LOWER;
+
+cars = LOAD '/user/ingenieroandresangel/datasets/duplicates.csv' USING PigStorage(',')
+AS (id:int,brand:chararray,city:chararray,country:chararray,value:double);
+
+cars_cust = FOREACH cars GENERATE andresupper(brand);
+dump cars_cust;
+
+
