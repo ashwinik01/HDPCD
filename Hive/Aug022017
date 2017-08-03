@@ -1,0 +1,37 @@
+##Define a Hive-managed table
+CREATE TABLE test_managed ( id int, name string)
+STORED AS TEXTFILE;
+
+##Define a Hive external table
+CREATE EXTERNAL TABLE test_external(id string, name string, value double )
+STORED AS ORC;
+
+##Define a partitioned Hive table
+CREATE TABLE test_partitioned
+( id int, name string, city string, country string)
+PARTITIONED BY(code string)
+CLUSTERED BY(id) SORTED BY(name) INTO 3 BUCKETS
+STORED AS AVRO;
+
+##Define a bucketed Hive table
+CREATE TABLE test_clustered
+( id int, name string, code string)
+CLUSTERED BY(id) INTO 2 BUCKETS
+STORED AS SEQUENCEFILE;
+
+##Define a Hive table from a select query
+CREATE TABLE customers_query
+STORED AS RCFILE
+AS
+SELECT * FROM customers;
+
+##Define a Hive table that uses the ORCFile format
+CREATE TABLE test_orcf (id int, name string, code string )
+COMMENT 'TEST ORC'
+PARTITIONED BY(country string)
+CLUSTERED BY (id) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+NULL DEFINED AS '0'
+STORED AS ORC;
