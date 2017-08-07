@@ -1,0 +1,155 @@
+
+
+## Create a new ORCFile table from the data in an existing non-ORCFile Hive table
+CREATE TABLE customer_orc
+STORED AS ORC
+AS 
+SELECT * FROM customers;
+
+##Specify the storage format of a Hive table
+create table testrc (id int, name string)
+stored as rcfile;
+
+create table testtxt (id int, name string)
+stored as textfile;
+
+create table testsequ (id int, name string)
+stored as sequencefile;
+
+create table testavro (id int, name string)
+stored as avro;
+
+create table testparqu (id int, name string)
+stored as parquet;
+
+##Specify the delimiter of a Hive table
+CREATE TABLE teacher (
+id int,
+name string,
+school_code varchar(20),
+salary double )
+PARTITIONED BY(city string)
+CLUSTERED BY(id) SORTED BY(name) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+null defined as '0'
+STORED AS TEXTFILE;
+
+## Load data into a Hive table from a local directory
+tail -n +2 salaries.csv >> salariesnh.csv
+
+CREATE TABLE salaries (
+year int,
+teamid string,
+lgid varchar(10),
+playerid string,
+salary double )
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/Salaries.csv'
+OVERWRITE INTO TABLE salaries;
+
+## Load data into a Hive table from an HDFS directory
+
+CREATE TABLE station (
+code int,
+name string,
+la double,
+lo double )
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/user/ingenieroandresangel/datasets/Stations_2015_nh.csv'
+OVERWRITE INTO TABLE station;
+
+## Load data into a Hive table as the result of a query
+CREATE TABLE orders_query
+( id int,
+o_date string,
+order_customerid int,
+o_status string )
+COMMENT 'Created from a query'
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+stored as avro;
+
+
+from orders
+insert into table orders_query
+select order_id,order_date,order_customer_id, order_status;
+
+
+## Load a compressed data file into a Hive table
+CREATE TABLE sample (info string)
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/sample.csv.gz'
+OVERWRITE INTO TABLE sample;
+
+##Update a row in a Hive table
+##Delete a row from a Hive table
+##Insert a new row into a Hive table
+
+set hive.support.concurrency = true;
+set hive.enforce.bucketing=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DbTxnManager;
+set hive.compactor.initiator.on=true;
+set hive.compactor.worker.threads=1;
+
+
+create table catergories_trans(
+id int,
+cate_deptid int,
+cat_name string)
+COMMENT 'Table to simulate transactions'
+CLUSTERED BY (id) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC
+tblproperties ('transactional'='true');
+
+INSERT INTO TABLE catergories_trans VALUES (1,2,'RED'),(2,3,'YELLOW'),(3,4,'BLUE');
+
+UPDATE catergories_trans
+SET cat_name = 'ORANGE'
+WHERE cat_name ='RED';
+
+DELETE FROM catergories_trans WHERE cat_name='BLUE';
+
+## Join two Hive tables
+
+create table july
+( start_date string, start_station int, end_date string, end_station int, duration int, member_s int)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/user/ingenieroandresangel/datasets/July_nh.CSV'
+OVERWRITE INTO TABLE july;
+
+SELECT
+a.start_station,
+b.name,
+SUM(a.duration)
+FROM july a
+INNER JOIN station b 
+ON a.start_station = b.code
+GROUP BY a.start_station,b.name;
+
+
+
+
+
+
+
+
