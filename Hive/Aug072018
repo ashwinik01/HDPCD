@@ -147,7 +147,34 @@ ON a.start_station = b.code
 GROUP BY a.start_station,b.name;
 
 
+##Output the execution plan for a Hive query
+##Run a Hive query using Tez
+##Run a Hive query using vectorization
 
+set hive.execution.egine= tez;
+set hive.vectorized.execution.enable=true;
+
+explain 
+SELECT
+a.start_station,
+b.name,
+SUM(a.duration)
+FROM july a
+INNER JOIN station b 
+ON a.start_station = b.code
+GROUP BY a.start_station,b.name;
+
+## Use a subquery within a Hive query
+SELECT 
+orh.order_id,
+orh.order_customer_id,
+orh.customer_fname,
+SUM(ori.order_item_subtotal)
+FROM
+(select oh.order_id,oh.order_customer_id,oh.order_status,cx.customer_fname
+from orders oh inner join customers cx on oh.order_customer_id=cx.customer_id) orh 
+INNER JOIN order_items ori ON orh.order_id=ori.order_item_order_id
+GROUP BY orh.order_id,orh.order_customer_id,orh.customer_fname;
 
 
 
