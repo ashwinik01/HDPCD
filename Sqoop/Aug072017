@@ -1,0 +1,48 @@
+## Import data from a table in a relational database into HDFS
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity --e 'show tables' 
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--table customers --target-dir /user/ingenieroandresangel/sqoop/customers 
+--where
+--columns
+
+## Import the results of a query from a relational database into HDFS
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--e 'SELECT a.order_id,b.customer_fname FROM orders a INNER JOIN customers b ON a.order_customer_id=b.customer_id WHERE $CONDITIONS' \
+--split-by order_customer_id --target-dir /user/ingenieroandresangel/sqoop/query -m 1
+
+##Import a table from a relational database into a new or existing Hive table
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--table products --split-by product-id --hive-import --hive-database poc --hive-table product_sqoop --create-hive-table \
+--target-dir /user/ingenieroandresangel/sqoop/hive  -m 1
+
+
+CREATE TABLE `product_sqoop`(
+  `product_id` int,
+  `product_category_id` int,
+  `product_name` string,
+  `product_description` string,
+  `product_price` double,
+  `product_image` string)
+COMMENT 'Imported by sqoop on 2017/08/07 20:36:58'
+ROW FORMAT DELIMITED
+  FIELDS TERMINATED BY '\u0001'
+  LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+## Insert or update data from HDFS into a table in a relational database
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity --e 'show tables' 
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'create table export_sqoop_dept (id_dept int primary key, name varchar(20))' 
+
+sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table export_sqoop_dept --update-key id --update-mode  allowinsert --export-dir /user/ingenieroandresangel/datasets/sqoop_export.txt \
+-m 1
+
+##Given a Flume configuration file, start a Flume agent
+## Given a configured sink and source, configure a Flume memory channel with a specified capacity
+
+flume-ng agent -name a1 --conf /home/ingenieroandresangel/flume/ --conf-file /home/ingenieroandresangel/flume/example.conf
+
+
+
