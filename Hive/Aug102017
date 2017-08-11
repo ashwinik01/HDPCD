@@ -1,0 +1,173 @@
+##Define a Hive-managed table
+CREATE TABLE jobs
+( id_job int, name string, source string, execution_time double, time date)
+STORED AS TEXTFILE;
+
+
+##Define a Hive external table
+CREATE EXTERNAL TABLE job_location
+(id_location int, name string, city varchar(20), id_job int)
+STORED AS TEXTFILE
+LOCATION '/user/ingenieroandresangel/hive/job_location';
+
+##Define a partitioned Hive table
+CREATE TABLE employees
+( id_e int, last_name string, first_name string, salary double)
+PARTITIONED BY(city string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS AVRO;
+
+## Define a bucketed Hive table
+CREATE TABLE stations_city
+(id_city int, city_name string , location string, id_product int)
+COMMENT 'JUST A TEST'
+PARTITIONED BY(country string)
+CLUSTERED BY(id_city) SORTED BY(city_name) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS SEQUENCEFILE;
+
+## Define a Hive table from a select query
+CREATE TABLE order_query
+STORED AS PARQUET
+AS
+SELECT * FROM orders;
+
+## Define a Hive table that uses the ORCFile format
+CREATE TABLE jobs
+(id_job int, source string, name string, duration int)
+COMMENT 'TEST'
+PARTITIONED BY(country string)
+CLUSTERED BY(id_job) INTO 3 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC;
+
+## Create a new ORCFile table from the data in an existing non-ORCFile Hive table
+CREATE TABLE products_orc
+STORED AS ORC
+AS
+SELECT * FROM products;
+
+##Specify the storage format of a Hive table
+create table test_txt (id int, name string) STORED AS TEXTFILE;
+create table test_orc (id int, name string) STORED AS ORC;
+create table test_parquet (id int,name string) STORED AS PARQUET;
+create table test_sequence (id int, name string) STORED AS SEQUENCEFILE;
+create table test_avro (id int,name string) STORED AS AVRO;
+create table test_rc (id int, name string) STORED AS RCFILE;
+
+
+##Specify the delimiter of a Hive table
+CREATE TABLE job (id int, name string, location string, duration int )
+COMMENT 'TEST'
+PARTITIONED BY (city string)
+CLUSTERED BY(id) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+##Load data into a Hive table from a local directory
+CREATE TABLE station
+(code int, name string , la double, lo double)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/noheaders/Stations_2015_nh.csv'
+OVERWRITE INTO TABLE station;
+
+## Load data into a Hive table from an HDFS directory
+
+LOAD DATA INPATH '/user/ingenieroandresangel/datasets/stations_nh.csv'
+OVERWRITE INTO TABLE station;
+
+## Load data into a Hive table as the result of a query
+
+CREATE TABLE orders_query(
+id int,
+o_date string,
+o_cx_id int,
+o_status string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\u0001'
+LINES TERMINATED BY '\n'
+STORED AS SEQUENCEFILE;
+
+
+from orders
+insert into orders_query
+select order_id,order_date,order_customer_id,order_status;
+
+## Load a compressed data file into a Hive table
+CREATE TABLE sample (line_text string) STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/sample.csv.gz'
+OVERWRITE INTO TABLE sample;
+
+##Update a row in a Hive table
+##Delete a row from a Hive table
+##Insert a new row into a Hive table
+
+set hive.support.concurrency = true;
+set hive.enforce.bucketing=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DbTxnManager;
+set hive.compactor.initiator.on=true;
+set hive.compactor.worker.threads=1;
+
+
+CREATE TABLE test_transac
+(id int, name string)
+COMMENT 'Transactional'
+CLUSTERED BY(id) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC
+tblproperties ('transactional'='true');
+
+insert into table test_transac values (1,'andres'),(2,'camila'),(3,'valeria');
+
+update test_transac set name = 'angelika' where name ='valeria';
+delete from test_transac where id=3;
+
+##Join two Hive tables
+##Output the execution plan for a Hive query
+##Output data from a Hive query that is totally ordered across multiple reducers
+
+EXPLAIN
+select 
+ord.order_id,
+ord.order_date,
+ord.order_status,
+cx.customer_fname
+from orders ord
+inner join customers cx on ord.order_customer_id = cx.customer_id
+order by ord.order_id desc;
+
+
+## Use a subquery within a Hive query
+select 
+pr_query.order_id,
+pr_query.customer_fname,
+SUM(ori.order_item_subtotal) as total
+from 
+(select 
+ord.order_id,
+ord.order_date,
+ord.order_status,
+cx.customer_fname
+from orders ord
+inner join customers cx on ord.order_customer_id = cx.customer_id) pr_query
+inner join order_items ori 
+on pr_query.order_id = ori.order_item_order_id
+group by pr_query.order_id,pr_query.customer_fname
+order by total desc
+LIMIT 10;
