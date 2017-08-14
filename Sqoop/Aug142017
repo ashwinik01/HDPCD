@@ -48,4 +48,10 @@ sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username 
 sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
 --e 'select * from roles'
 
+##Given a Flume configuration file, start a Flume agent
+##Given a configured sink and source, configure a Flume memory channel with a specified capacity
+
+flume-ng agent -name a1 --conf /home/ingenieroandresangel/flume --conf-file /home/ingenieroandresangel/flume/example.conf
+
+
 
