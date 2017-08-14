@@ -1,0 +1,51 @@
+##Import data from a table in a relational database into HDFS
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--e 'describe products';
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--table products --where 'product_id > 1000' --target-dir /user/ingenieroandresangel/sqoop/products \
+--fields-terminated-by '|' --lines-terminated-by '\n' -m 1;
+
+## Import the results of a query from a relational database into HDFS
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--e 'select ord.order_id,ord.order_status,cx.customer_fname from orders ord inner join customers cx on ord.order_customer_id=cx.customer_id where $CONDITIONS and ord.order_status="complete" order by 1 desc' \
+--split-by order_id --target-dir /user/ingenieroandresangel/sqoop/query --fields-terminated-by ',' -m 2
+
+
+##Import a table from a relational database into a new or existing Hive table
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'insert into roles values (5,"Francois","architec")';
+
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table roles --split-by id_emp \
+--target-dir /user/ingenieroandresangel/hive/roles --hive-import --hive-database poc --hive-table roles
+
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table roles --split-by id_emp --check-column id_emp --last-value 5 --incremental append \
+--target-dir /user/ingenieroandresangel/hive/roles --hive-import --hive-database poc --hive-table roles
+
+
+
+
+create external table role
+(id_emp int, name string, role_name string)
+STORED AS TEXTFILE
+LOCATION '/user/ingenieroandresangel'
+
+
+## Insert or update data from HDFS into a table in a relational database
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'alter table roles add constraint id_emp_pk primary key (id_emp)'
+
+sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table roles --update-key id_emp --update-mode allowinsert --export-dir /user/ingenieroandresangel/datasets/export/* \
+-m 1
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'select * from roles'
+
+
