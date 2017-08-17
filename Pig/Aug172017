@@ -1,0 +1,38 @@
+## Load data into a Pig relation without a schema
+station = load '/user/ingenieroandresangel/datasets/stations_nh.csv' USING PigStorage(',');
+
+## Load data into a Pig relation with a schema
+station_s = LOAD '/user/ingenieroandresangel/datasets/stations_nh.csv' USING PigStorage (',')
+AS (code:int,name:chararray,la:float,lo:float);
+
+## Load data from a Hive table into a Pig relation
+customer = LOAD 'poc.customers' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+
+##Use Pig to transform data into a specified format
+order_items = LOAD 'poc.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader();
+orders = LOAD 'poc.orders' USING org.apache.hive.hcatalog.pig.HCatLoader();
+orders_details = FOREACH  orders GENERATE   (int) GetYear(ToDate(order_date)) as (year:int), (int) GetMonth(ToDate(order_date)) as (month:int), order_id,order_customer_id;
+ord_det_gr = GROUP orders_details BY (year,order_customer_id);
+or_outcome = FOREACH ord_det_gr {
+          qty_inv = COUNT(orders_details);
+          GENERATE FLATTEN(group) as (year:int,cust_id:int),qty_inv as qty_inv:long;
+          };
+          
+or_cus_max = ORDER or_outcome BY qty_inv DESC;
+or_max_result = LIMIT or_cus_max 1;
+
+##Transform data to match a given Hive schema
+order_items = LOAD ' hdfs://nn01.itversity.com:8020/apps/hive/warehouse/poc.db/order_items' USING PigStorage('\u0001')
+AS (order_item_id:int,order_item_order_id:int, order_item_product_id:int,order_item_quantity:int,order_item_subtotal:double,order_item_product_price:double);
+
+##Group the data of one or more Pig relations
+order_it_grall = GROUP order_items ALL;
+order_grall_total = FOREACH order_it_grall GENERATE COUNT_STAR(order_items);
+order_item_pr = GROUP order_items BY $2;
+order_pr_tot = FOREACH order_item_pr GENERATE group,COUNT(order_items);
+
+order_detail_cogr = COGROUP orders by order_id , order_items by order_item_order_id;
+mixed_result = FOREACH order_detail_cogr {
+          qty_lines = COUNT(order_items);
+          GENERATE group,qty_lines;
+          };
