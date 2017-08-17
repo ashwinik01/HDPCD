@@ -36,3 +36,12 @@ mixed_result = FOREACH order_detail_cogr {
           qty_lines = COUNT(order_items);
           GENERATE group,qty_lines;
           };
+
+
+##Use Pig to remove records with null values from a relation
+duplicates = LOAD '/user/ingenieroandresangel/datasets/duplicates.csv' USING PigStorage(',');
+dupl_cl = FILTER duplicates BY $2 IS NOT NULL AND  $4 IS NOT NULL;
+
+
+
+
