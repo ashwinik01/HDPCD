@@ -1,0 +1,206 @@
+## Define a Hive-managed table
+CREATE TABLE student
+(id int, name string, value double, age int)
+STORED AS TEXTFILE;
+
+##Define a Hive external table
+CREATE EXTERNAL TABLE departments_exter
+(id_s int, name string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+LOCATION '/user/ingenieroandresangel/datasets/hive_external';
+
+
+## Define a partitioned Hive table
+CREATE TABLE program
+( id_pro int, name string, university string, value double)
+PARTITIONED BY (country string, city string)
+CLUSTERED BY(id_pro) SORTED BY(name) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS AVRO;
+
+
+## Define a bucketed Hive table
+CREATE TABLE rutes
+(id_rute int, name string, lo double, la double, frequence string)
+PARTITIONED BY (city string)
+CLUSTERED BY(id_rute) SORTED BY(name) INTO 3 BUCKETS
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS RCFILE;
+
+
+## Define a Hive table from a select query
+
+CREATE TABLE july_summ
+AS
+SELECT start_date,start_station,duration,member_s FROM july;
+
+## Define a Hive table that uses the ORCFile format
+
+CREATE TABLE restaurant 
+(id_res int, name string, location string, address string)
+PARTITIONED BY (city string)
+CLUSTERED BY (id_res) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC;
+
+
+
+## Create a new ORCFile table from the data in an existing non-ORCFile Hive table
+
+CREATE TABLE customers_orc
+STORED AS ORC
+AS
+select * from customers;
+
+## Specify the storage format of a Hive table
+
+create table test_txt (id int, name string) stored as textfile;
+create table test_rc (id int, name string) stored as rcfile;
+create table test_avro (id int, name string) stored as avro;
+create table test_orc (id int, name string) stored as orc;
+create table test_sequ (id int, name string) stored as sequencefile;
+create table test_parquet (id int, name string) stored as parquet;
+
+
+##Specify the delimiter of a Hive table
+CREATE TABLE  students
+(id int, name string, age int, intuition double, rate float)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS AVRO;
+
+
+
+##Load data into a Hive table from a local directory
+
+CREATE TABLE station
+(code int, name string, la float, lo float)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/BixiMontrealRentals2015/stations_nh.csv'
+OVERWRITE INTO TABLE station;
+
+
+## Load data into a Hive table from an HDFS directory
+
+LOAD DATA  INPATH '/user/ingenieroandresangel/datasets/stations_nh.csv'
+OVERWRITE INTO TABLE station;
+
+
+##  Load data into a Hive table as the result of a query
+
+CREATE TABLE products_query
+(item_id int, name string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS AVRO;
+
+
+from products
+INSERT INTO TABLE products_query
+select product_id,product_name;
+
+## Load a compressed data file into a Hive table
+create table sample
+(f1 string,f2 string, f3 string, f4 string, f5 string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '\t'
+LINES TERMINATED BY '\n'
+stored as textfile;
+
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/sample.csv.gz'
+OVERWRITE INTO TABLE sample;
+
+
+##Update a row in a Hive table
+##Delete a row from a Hive table
+##Insert a new row into a Hive table
+
+CREATE TABLE test_transac
+(id int, name string)
+COMMENT 'transactonal test'
+CLUSTERED BY(id) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC
+tblproperties ('transactional'='true');
+
+set hive.support.concurrency = true;
+set hive.enforce.bucketing=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DbTxnManager;
+set hive.compactor.initiator.on=true;
+set hive.compactor.worker.threads=1;
+
+insert into test_transac values (1,'andres'),(2,'francois'),(3,'camila'),(4,'laura');
+update test_transac set name='Jean Carlo' where name ='andres';
+delete from test_transac where id >=3;
+
+##Run a Hive query using vectorization
+##Run a Hive query using Tez
+##Join two Hive tables
+## Output the execution plan for a Hive query
+## Output data from a Hive query that is totally ordered across multiple reducers
+## Set a Hadoop or Hive configuration property from within a Hive query
+
+set hive.execution.engine=tez;
+set hive.vectorized.execution.enabled=true;
+
+explain
+select 
+ordi.order_item_order_id as itmid,
+ordi.order_item_product_id,
+ordi.order_item_subtotal,
+itm.product_name
+from order_items ordi
+left join  products itm 
+on ordi.order_item_product_id=itm.product_id
+order by itmid desc;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
