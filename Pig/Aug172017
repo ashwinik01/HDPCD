@@ -43,5 +43,71 @@ duplicates = LOAD '/user/ingenieroandresangel/datasets/duplicates.csv' USING Pig
 dupl_cl = FILTER duplicates BY $2 IS NOT NULL AND  $4 IS NOT NULL;
 
 
+## Store the data from a Pig relation into a folder in HDFS
+STORE order_items INTO '/user/ingenieroandresangel/pig/ordersit' USING PigStorage(',');
 
+## Store the data from a Pig relation into a Hive table
+
+order_itm_gr = GROUP order_items BY order_item_product_id;
+order_res = FOREACH order_itm_gr {
+          avg_price = AVG(order_items.order_item_product_price);
+          qty_inv = COUNT(order_items);
+          GENERATE group as item_id, (float) avg_price as avg_price:float, (int) qty_inv as qty_inv:int;
+      };
+          
+ 
+ 
+ CREATE TABLE product_analysis
+ (item_id int,
+ avg_price float,
+ qty_inv int
+ )
+ STORED AS TEXTFILE;
+ 
+ 
+ STORE order_res INTO 'poc.product_analysis' USING org.apache.hive.hcatalog.pig.HCatStorer ();
+ 
+ ## Sort the output of a Pig relation
+ order_srt = ORDER order_res BY avg_price DESC;
+ order_srt_lmt = LIMIT order_srt 3;
+ 
+ ## Remove the duplicate tuples of a Pig relation
+ duplicate_uni = DISTINCT dupl_cl;
+ 
+ 
+## Specify the number of reduce tasks for a Pig MapReduce job
+set default_reduce 2;
+
+
+ ## Join two datasets using Pig
+ 
+ products = LOAD 'poc.products' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+ products_clean = FOREACH products GENERATE product_id, product_name;
+ 
+ avg_item_det = JOIN order_res by item_id , products by product_id;
+ avg_item_det = JOIN order_res by item_id LEFT OUTER, products by product_id; 
+ avg_item_det = join order_res by item_id RIGHT OUTER, products_clean by product_id;
+ 
+ ##Perform a replicated join using Pig
+ 
+ 
+  avg_item_det = join order_res by item_id LEFT OUTER, products_clean by product_id USING 'replicated';
+  
+  ##Run a Pig job using Tez
+  ##Within a Pig script, register a JAR file of User Defined Functions
+  ##Within a Pig script, define an alias for a User Defined Function
+  ##Within a Pig script, invoke a User Defined Function
+  
+ set default_parallel 3;
+ REGISTER '/home/ingenieroandresangel/piggybank-0.12.0.jar'
+ DEFINE lower_perso 'org.apache.pig.piggybank.evaluation.string.LOWER'
+  
+  
+ products_clean = FOREACH products GENERATE product_id, lower_perso(product_name) as descrif;
+ dump products_clean;
+  
+  
+  
+
+ 
 
