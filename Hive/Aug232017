@@ -1,0 +1,188 @@
+## Define a Hive-managed table
+CREATE TABLE Student
+(id_s int, name string, phone string, age int)
+PARTITIONED BY(city string)
+CLUSTERED BY(id_s) SORTED BY(name) INTO 3 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS RCFILE;
+
+## Define a Hive external table
+CREATE EXTERNAL TABLE salaries
+(yearID int, teamID string, lgID string, playerID string, salary float )
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE
+LOCATION '/user/ingenieroandresangel/datasets/hive_external/';
+
+##Define a partitioned Hive table
+CREATE TABLE player
+(id_player int, name string,  team string, city string, age int )
+COMMENT 'Test'
+PARTITIONED BY (country string)
+CLUSTERED BY(id_player) SORTED BY (name) INTO 3 BUCKETS
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS AVRO;
+
+## Define a bucketed Hive table
+CREATE TABLE employee
+(id_employee int, name string, age int, starting_year int, department_id int)
+PARTITIONED BY(company string)
+CLUSTERED BY(id_employee) SORTED BY(starting_year) INTO 4 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS SEQUENCEFILE;
+
+
+## Define a Hive table from a select query
+CREATE TABLE salaries_query
+STORED AS PARQUET
+AS
+SELECT * FROM salaries;
+
+
+## Define a Hive table that uses the ORCFile format
+CREATE TABLE departments_orc
+(dep_id int, name string, team_qty int, branch string, dir_name string)
+COMMENT 'TEST'
+PARTITIONED BY (country string)
+CLUSTERED BY(dep_id) SORTED BY(branch) INTO 2 BUCKETS
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC;
+
+
+## Create a new ORCFile table from the data in an existing non-ORCFile Hive table
+CREATE TABLE products_orc
+STORED AS ORC
+AS
+SELECT * FROM products;
+
+## Specify the storage format of a Hive table
+CREATE TABLE test_txt (id int, name string) STORED AS TEXTFILE;
+CREATE TABLE test_orc (id int, name string) STORED AS ORC;
+CREATE TABLE test_rcfile (id int, name string) STORED AS RCFILE;
+CREATE TABLE test_avro (id int, name string) STORED AS AVRO;
+CREATE TABLE test_sequence (id int, name string) STORED AS SEQUENCEFILE;
+CREATE TABLE test_parquet (id int, name string) STORED AS PARQUET;
+
+##Specify the delimiter of a Hive table
+CREATE TABLE employee
+(id_em int, name string, dept_id int, age int, salary double)
+COMMENT 'TEST'
+PARTITIONED BY (country string)
+CLUSTERED BY(id_em) SORTED BY (name) INTO 3 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS SEQUENCEFILE;
+
+## Load data into a Hive table from a local directory
+CREATE TABLE players
+(playerID string,schoolID string,yearMin int,yearMax int)
+COMMENT 'PLAYERS'
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/SchoolPlayersnh.csv'
+OVERWRITE INTO TABLE players;
+
+
+## Load data into a Hive table from an HDFS directory
+CREATE TABLE school
+(schoolID string,schoolName string,schoolCity string,schoolState string,schoolNick string)
+COMMENT 'SCHOOL'
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/user/ingenieroandresangel/datasets/Schoolsnh.csv'
+OVERWRITE INTO TABLE school;
+
+
+##Load data into a Hive table as the result of a query
+CREATE TABLE schools_query
+(schoolID string,schoolName string,schoolCity string)
+COMMENT 'QUERY'
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS AVRO;
+
+from school
+INSERT INTO schools_query
+SELECT schoolID ,schoolName ,schoolCity ;
+
+## Load a compressed data file into a Hive table
+CREATE TABLE sample
+(info string)
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/sample.csv.gz'
+OVERWRITE INTO TABLE sample;
+
+##Update a row in a Hive table
+##Delete a row from a Hive table
+##Insert a new row into a Hive table
+
+set hive.support.concurrency = true;
+set hive.enforce.bucketing=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DbTxnManager;
+set hive.compactor.initiator.on=true;
+set hive.compactor.worker.threads=1;
+
+CREATE TABLE test_transac
+(id int, name string)
+COMMENT 'transactional'
+CLUSTERED BY(id) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC
+tblproperties ('transactional'='true');
+
+
+INSERT INTO TABLE test_transac VALUES (1,'andres'),(2,'Lauren');
+DELETE FROM test_transac WHERE id=2;
+UPDATE test_transac SET name ='Julian' WHERE id=1;
+
+##Join two Hive tables
+##Run a Hive query using Tez
+##Run a Hive query using vectorization
+##Output the execution plan for a Hive query
+##Use a subquery within a Hive query
+##Output data from a Hive query that is totally ordered across multiple reducers
+
+
+set hive.execution.engine=tez;
+set hive.vectorized.execution.enabled=true;
+
+EXPLAIN
+SELECT
+scl.schoolname,
+scl.schoolcity,
+sm.playerid,
+sm.salary
+FROM school scl INNER JOIN (
+select 
+pl.schoolid,
+pl.playerid,
+sl.salary
+FROM players pl INNER JOIN salaries sl 
+ON pl.playerid=sl.playerid
+AND pl.yearmax=sl.yearid ) sm
+ON scl.schoolid=sm.schoolid
+ORDER BY schoolcity ASC
+LIMIT 20;
+
