@@ -1,0 +1,28 @@
+## Import data from a table in a relational database into HDFS
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity --e 'show tables'
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity --table customers \
+--target-dir '/user/ingenieroandresangel/sqoop/customer/' --fields-terminated-by '|' --lines-terminated-by '\n' -m 1 --as-sequencefile
+
+
+##Import the results of a query from a relational database into HDFS
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity --e \
+'select a.order_item_id,a.order_item_product_id,b.product_name, sum(order_item_product_price) as total from order_items a inner join products b on a.order_item_product_id=b.product_id WHERE b.product_id=1073 and $CONDITIONS group by a.order_item_id,a.order_item_product_id,b.product_name' \
+--split-by order_item_product_id --target-dir /user/ingenieroandresangel/sqoop/product_query -m 1
+
+
+## Import a table from a relational database into a new or existing Hive table
+
+
+create table products_import
+(id_pro int, name varchar(20));
+
+insert into products_import values (1,"wheels"),(2,"board"),(3,"trucks");
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table products_import \
+--target-dir  /user/ingenieroandresangel/sqoop/hive_im  --hive-import --hive-database poc --incremental append  \
+--check-column id_pro --last-value 3 -m 1
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e  'select * from products_import'
