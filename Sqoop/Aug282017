@@ -26,3 +26,25 @@ sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username 
 
 sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
 --e  'select * from products_import'
+
+
+## Insert or update data from HDFS into a table in a relational database
+##insert
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'drop table products_import'
+
+sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table products_import --export-dir /user/ingenieroandresangel/datasets/sqoop_export.txt -m 1
+
+##update
+
+sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table products_import --export-dir /user/ingenieroandresangel/datasets/sqoop_export.txt --update-mode allowinsert \
+--update-key id_pro -m 1
+
+
+## Given a Flume configuration file, start a Flume agent
+
+flume-ng agent -n a1 -conf /home/ingenieroandresangel/flume --conf-file flumev2.conf
+
