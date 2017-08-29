@@ -1,0 +1,95 @@
+##Load data into a Pig relation without a schema
+schools = LOAD '/user/ingenieroandresangel/datasets/Schools_noheaders.csv' USING PigStorage (',');
+
+##Load data into a Pig relation with a schema
+players = LOAD '/user/ingenieroandresangel/datasets/SchoolPlayersnh.csv' USING PigStorage (',') 
+AS (playerID:chararray,schoolID:chararray,yearMin:int,yearMax:int);
+
+##Load data from a Hive table into a Pig relation
+salaries = LOAD 'poc.salaries' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+
+##Use Pig to transform data into a specified format
+
+salaries_fl = FILTER salaries BY yearid >= 2000;
+sal_gr = GROUP salaries_fl BY (yearid,teamid);
+sal_total = FOREACH sal_gr {
+        avg_sal = AVG(salaries_fl.salary);
+        total_sal = SUM(salaries_fl.salary);
+        qty_team = COUNT(salaries_fl);
+        GENERATE FLATTEN(group),avg_sal,total_sal,qty_team;
+        };
+sal_total_or = ORDER sal_total BY $4 DESC;   
+sal_top3 = LIMIT sal_total_or 3;
+
+##Transform data to match a given Hive schema
+products_item = LOAD 'hdfs://nn01.itversity.com:8020/apps/hive/warehouse/poc.db/products_import/' USING PigStorage ('\u0001')
+AS (id_pro:int,name:chararray);
+
+## Group the data of one or more Pig relations
+
+play_cl = FOREACH players GENERATE $0,$1;
+sal_fl = FILTER salaries BY yearid == 2010;
+sal_cl = FOREACH sal_fl GENERATE $3,$4;
+sal_play = COGROUP sal_cl by playerid, play_cl by playerID;
+sal_out = FOREACH sal_play {
+        sal =sal_cl.salary;
+        qty_schools = COUNT(play_cl);
+        GENERATE FLATTEN(group),FLATTEN(sal),FLATTEN(qty_schools);
+        };
+
+##Use Pig to remove records with null values from a relation
+data = LOAD '/user/ingenieroandresangel/datasets/duplicates.csv' USING PigStorage(',');
+data_fl = FILTER data BY $2 is not null and $4 is not null;
+
+##Store the data from a Pig relation into a folder in HDFS
+STORE data_fl INTO '/user/ingenieroandresangel/pig/notnull' USING PigStorage (',');
+
+##Store the data from a Pig relation into a Hive table
+
+data_store = FOREACH data_fl GENERATE (int) $0 as (id:int), (chararray) $1 as (brand:chararray), (chararray) $2 as (city:chararray), (chararray) $3 as (country:chararray), (double) $4 as (value:double);
+STORE data_sotre INTO 'poc.pig_store' USING org.apache.hive.hcatalog.pig.HCatStorer ();
+
+##Sort the output of a Pig relation
+
+data_store_srt = ORDER data_store BY value DESC; 
+
+##Remove the duplicate tuples of a Pig relation
+
+dta_store_uni = DISTINCT data_store_srt;
+
+##Specify the number of reduce tasks for a Pig MapReduce job
+set default_parallel 2;
+
+## Join two datasets using Pig
+## Perform a replicated join using Pig
+
+saplayer = JOIN salaries by playerid, players by playerID;
+saplayer_left = JOIN salaries by playerid LEFT OUTER, players by playerID;
+saplayer_right =  JOIN salaries by playerid RIGHT OUTER, players by playerID;
+
+saplayer = JOIN salaries by playerid, players by playerID using 'replicated';
+
+##Run a Pig job using Tez
+##Within a Pig script, register a JAR file of User Defined Functions
+##Within a Pig script, define an alias for a User Defined Function
+##Within a Pig script, invoke a User Defined Function
+
+set default_parallel 5;
+REGISTER '/home/ingenieroandresangel/piggybank-0.12.0.jar';
+DEFINE lowandres org.apache.pig.piggybank.evaluation.string.LOWER;
+
+data = LOAD '/user/ingenieroandresangel/datasets/duplicates.csv' USING PigStorage(',');
+data_fl = FILTER data BY $2 is not null and $4 is not null;
+data_lower = FOREACH data_fl GENERATE $0,lowandres($1),lowandres($2),lowandres($3),$4;
+dump data_wer;
+
+
+
+
+
+
+
+
+
+
+
