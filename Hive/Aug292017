@@ -1,0 +1,30 @@
+##Define a Hive-managed table
+CREATE TABLE teachers
+(id_teacher int, name string, age string, year int, salary double)
+PARTITIONED BY (city string)
+CLUSTERED BY(id_teacher) SORTED BY(name) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+##Define a Hive external table
+CREATE TABLE cours
+(idcou int,name string, schedule string, hours int, cost double)
+PARTITIONED BY(college string)
+CLUSTERED  BY(idcou) SORTED BY(cost) INTO 3 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS SEQUENCEFILE
+LOCATION '/user/ingenieroandresangel/hive/';
+
+##Define a partitioned Hive table
+CREATE TABLE teacher
+(id int, name string, age int, salary double)
+PARTITIONED BY (city string)
+CLUSTERED BY(id) SORTED BY (salary) INTO 3 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS RCFILE;
