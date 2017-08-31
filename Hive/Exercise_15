@@ -1,0 +1,55 @@
+Point 1.
+
+SELECT 
+dpt.department_name,
+ct.category_name,
+CAST (SUM(oi.order_item_subtotal) AS DECIMAL(20,2)) AS sales_total
+FROM order_items oi
+LEFT JOIN products p
+ON oi.order_item_product_id=p.product_id
+LEFT JOIN categories ct
+ON p.product_category_id= ct.category_id
+LEFT JOIN departments dpt
+ON ct.category_department_id=dpt.department_id
+GROUP BY dpt.department_name,ct.category_name
+ORDER BY dpt.department_name,sales_total;
+
+Point 2.
+CREATE VIEW total_department
+AS 
+SELECT 
+dpt.department_name,
+CAST (SUM(oi.order_item_subtotal) AS DECIMAL(20,2)) AS sales_total
+FROM order_items oi
+LEFT JOIN products p
+ON oi.order_item_product_id=p.product_id
+LEFT JOIN categories ct
+ON p.product_category_id= ct.category_id
+LEFT JOIN departments dpt
+ON ct.category_department_id=dpt.department_id
+GROUP BY dpt.department_name
+ORDER BY dpt.department_name,sales_total;
+
+SELECT 
+dpt.department_name,
+ct.category_name,
+CAST (SUM(oi.order_item_subtotal) AS DECIMAL(20,2)) AS sales_total_dept,
+CAST ( (SUM(oi.order_item_subtotal) / tdept.sales_total * 100 )  AS DECIMAL (20,2) ) AS percentage
+FROM order_items oi
+LEFT JOIN products p
+ON oi.order_item_product_id=p.product_id
+LEFT JOIN categories ct
+ON p.product_category_id= ct.category_id
+LEFT JOIN departments dpt
+ON ct.category_department_id=dpt.department_id
+INNER JOIN total_department tdept
+ON dpt.department_name= tdept.department_name
+GROUP BY dpt.department_name,ct.category_name,sales_total
+ORDER BY dpt.department_name,sales_total_dept;
+
+
+
+
+
+
+
