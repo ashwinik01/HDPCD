@@ -1,0 +1,57 @@
+## Import data from a table in a relational database into HDFS
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--e 'describe order_items;'
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--table departments --columns department_name --where 'department_id > 2' --target-dir /user/ingenieroandresangel/sqoop/depts -m 1  
+
+## Import the results of a query from a relational database into HDFS
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--e 'select year(a.order_date), b.order_item_product_id, sum(b.order_item_subtotal) from orders a inner join order_items b on a.order_id=b.order_item_order_id where b.order_item_product_id > 1000 and $CONDITIONS group by year(a.order_date), b.order_item_product_id' \
+--split-by order_item_order_id --target-dir /user/ingenieroandresangel/sqoop/query -m 1 --direct
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_db --username retail_dba --password itversity \
+--e 'select year(a.order_date), b.order_item_product_id, sum(b.order_item_subtotal) from orders a inner join order_items b on a.order_id=b.order_item_order_id where b.order_item_product_id > 1000  group by year(a.order_date), b.order_item_product_id'
+
+## Import a table from a relational database into a new or existing Hive table
+
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'insert into product_hive_export values (5,"color"),(6,"bundles");'
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table product_hive_export --where 'id = 1' \
+--hive-import --hive-database poc --create-hive-table \
+--target-dir /user/ingenieroandresangel/sqoop/hive/ -m 1 
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table product_hive_export  --where 'id > 1' \
+--hive-import --hive-database poc --hive-table product_hive_export --incremental append --check-column id --last-value 1 \
+--target-dir /user/ingenieroandresangel/hive_update -m 1 
+
+sqoop import --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table product_hive_export \
+--hive-import --hive-database poc --hive-table product_hive_export --incremental append --check-column id --last-value 4 \
+--target-dir /user/ingenieroandresangel/hive_update -m 1 
+
+## Insert or update data from HDFS into a table in a relational database
+sqoop eval --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--e 'drop table depart_export ;'
+
+sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table depart_export \
+--export-dir /user/ingenieroandresangel/datasets/sqoop_export.txt -m 1 
+
+sqoop export --connect jdbc:mysql://nn01.itversity.com/retail_export --username retail_dba --password itversity \
+--table depart_export --update-mode allowinsert --update-key id \
+--export-dir /user/ingenieroandresangel/datasets/sqoop_export.txt -m 1 
+
+
+## Given a Flume configuration file, start a Flume agent
+## Given a configured sink and source, configure a Flume memory channel with a specified capacity
+
+flume-ng agent -n a1 -f example.conf -c /home/ingenieroandresangel/flume
+
+
+
+
