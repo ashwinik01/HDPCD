@@ -1,0 +1,108 @@
+## Load data into a Pig relation without a schema
+
+stations = LOAD '/user/ingenieroandresangel/datasets/pigfiles/' USING PigStorage (',');
+
+## Load data into a Pig relation with a schema
+stations = LOAD '/user/ingenieroandresangel/datasets/pigfiles/' USING PigStorage (',') 
+AS (id:int,name:chararray,lo:double,la:double);
+
+station_fl = FILTER stations BY id == 6109;
+
+## Load data from a Hive table into a Pig relation
+products = LOAD 'poc.products' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+categories = LOAD 'poc.categories' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+order_items = LOAD 'poc.order_items' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+ordes = LOAD 'poc.orders' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+
+## Use Pig to transform data into a specified format
+
+orders_y = FOREACH ordes GENERATE (int) GetYear(ToDate(order_date)) as (year:int),order_id;
+orde_gr = GROUP orders_y BY year;
+ord_out = FOREACH orde_gr {
+        qty_y = COUNT(orders_y);
+        qty_t = COUNT_STAR(orders_y);
+        GENERATE group, qty_y,qty_t;
+        };
+
+##Transform data to match a given Hive schema
+customers = LOAD ' hdfs://nn01.itversity.com:8020/apps/hive/warehouse/poc.db/customers/' USING PigStorage ('\u0001')
+AS (customer_id:int,customer_fname:chararray,customer_lname:chararray,customer_email:chararray,customer_password:chararray,customer_street:chararray,customer_city:chararray,customer_state:chararray,customer_zipcode:chararray); 
+
+##Group the data of one or more Pig relations
+
+station_gr = GROUP stations BY id;
+station_out = FOREACH station_gr {
+        qty = COUNT(stations);
+        unique = DISTINCT stations;
+        qty_unique = COUNT(unique);
+        GENERATE group,qty,qty_unique;
+        };
+        
+or_itm_gr = COGROUP ordes by order_id, order_items by order_item_order_id;
+or_out = FOREACH or_itm_gr {
+        total_or = SUM(order_items.order_item_subtotal);
+        qty_lines = COUNT(order_items);
+        GENERATE (int) group as (id:int), (double) total_or as (total:double) , (int) qty_lines as (q_lines:int);
+        };
+  
+  ord_sum_fil = FILTER or_out BY total != 0;
+  
+  
+  ##Use Pig to remove records with null values from a relation
+  duplicates = LOAD '/user/ingenieroandresangel/datasets/duplicates.csv' USING PigStorage (',')
+  AS (id:int,brand:chararray,city:chararray,country:chararray,value:int); 
+  
+  dup_fil = FILTER  duplicates BY city IS NOT NULL AND value IS NOT NULL;
+  
+  ##Store the data from a Pig relation into a folder in HDFS
+  ## Store the data from a Pig relation into a Hive table
+  
+  STORE or_out INTO '/user/ingenieroandresangel/pig/nonull';
+  STORE or_out INTO 'poc.pig_sum' USING org.apache.hive.hcatalog.pig.HCatStorer ();
+  
+  
+  CREATE TABLE pig_sum
+  ( id int, total double, q_lines int)
+  ROW FORMAT DELIMITED
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  NULL DEFINED AS '1'
+  STORED AS TEXTFILE;
+  
+  
+  ##Sort the output of a Pig relation
+  sum_gr_srt = ORDER or_out BY $2 DESC;
+  sum_top = LIMIT sum_gr_srt 3;
+
+## Remove the duplicate tuples of a Pig relation
+
+unique_car = DISTINCT dup_fil;
+
+##Specify the number of reduce tasks for a Pig MapReduce job
+##Join two datasets using Pig
+##Perform a replicated join using Pig
+##Run a Pig job using Tez
+##Within a Pig script, register a JAR file of User Defined Functions
+##Within a Pig script, define an alias for a User Defined Function
+##Within a Pig script, invoke a User Defined Function
+
+
+set default_parallel 2;
+REGISTER '/home/ingenieroandresangel/piggybank-0.12.0.jar';
+DEFINE upandres org.apache.pig.piggybank.evaluation.string.UPPER;
+
+orders = LOAD 'poc.orders' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+customers = LOAD 'poc.customers' USING org.apache.hive.hcatalog.pig.HCatLoader ();
+
+orders_customers = JOIN orders by order_customer_id LEFT OUTER, customers by customer_id using 'replicated';
+new_outp = FOREACH orders_customers GENERATE orders::order_id,customers::customer_fname, upandres(customers::customer_fname);
+new_lm = LIMIT new_outp 10;
+dump new_lm;
+
+
+
+
+
+
+
+   
