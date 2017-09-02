@@ -1,0 +1,208 @@
+##Define a Hive-managed table
+
+CREATE TABLE student
+( id int, name string, age int, contact string )
+PARTITIONED BY (city string)
+CLUSTERED BY (id) SORTED BY (name ) INTO 2 BUCKETS
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+NULL DEFINED AS '1'
+STORED AS TEXTFILE;
+
+##Define a Hive external table
+
+CREATE EXTERNAL TABLE stations_exter
+( id int, name string, lo float, la float )
+ROW FORMAT DELIMITED 
+  FIELDS TERMINATED BY ','
+  LINES TERMINATED BY '\n'
+  NULL DEFINED AS '1'
+STORED AS TEXTFILE
+LOCATION '/user/ingenieroandresangel/datasets/hive_external/';
+
+## Define a partitioned Hive table
+CREATE TABLE trans_type
+(id int, name string, year int)
+PARTITIONED BY (creator string)
+CLUSTERED BY (id) SORTED BY (year) INTO 2 BUCKETS
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+NULL DEFINED AS '1'
+STORED AS AVRO;
+
+## Define a bucketed Hive table
+CREATE TABLE cars_brands
+(id int, name string, brand string, year int, driver string)
+PARTITIONED BY (country string)
+CLUSTERED BY (id) SORTED BY (year) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+NULL DEFINED AS '2'
+STORED AS RCFILE;
+
+
+##Define a Hive table from a select query
+create table products_query
+AS
+SELECT * FROM products;
+
+
+##Define a Hive table that uses the ORCFile format
+ CREATE TABLE orc_customers
+ (id int, name string)
+ COMMENT 'ORC'
+ PARTITIONED BY (country string)
+ CLUSTERED BY(id)  INTO 3 BUCKETS
+ ROW FORMAT DELIMITED
+ FIELDS TERMINATED BY ','
+ LINES TERMINATED BY '\n'
+ STORED AS ORC
+ TBLPROPERTIES ("transactional"="true");
+
+set hive.support.concurrency = true;
+set hive.enforce.bucketing=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DbTxnManager;
+set hive.compactor.initiator.on=true;
+set hive.compactor.worker.threads=1;
+ 
+ insert into table orc_customers PARTITION  (country="colombia") values (1,"bombardier"),(1,"bombardier"),(1,"bombardier");
+
+##Create a new ORCFile table from the data in an existing non-ORCFile Hive table
+
+CREATE  TABLE categories_orc
+COMMENT 'ORC'
+STORED AS ORC
+TBLPROPERTIES ("transacional"="true")
+AS
+SELECT * FROM categories;
+
+
+set hive.support.concurrency = true;
+set hive.enforce.bucketing=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DbTxnManager;
+set hive.compactor.initiator.on=true;
+set hive.compactor.worker.threads=1;
+
+##Specify the storage format of a Hive table
+
+create table test_textfile (id int, name string) stored as textfile;
+create table test_avro (id int, name string) stored as avro;
+create table test_sequence (id int, name string) stored as sequencefile;
+create table test_rcfile (id int, name string) stored as rcfile;
+create table test_orc (id int, name string) stored as orc;
+create table test_parquet (id int, name string) stored as parquet;
+
+## Specify the delimiter of a Hive table
+
+CREATE TABLE cities
+(id int, name string, country string)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS AVRO;
+
+##Load data into a Hive table from a local directory
+
+CREATE TABLE stations
+(id int, name string, lo float, la float)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/BixiMontrealRentals2015/stations_nh.csv'
+OVERWRITE INTO TABLE stations;
+
+
+## Load data into a Hive table from an HDFS directory
+
+
+LOAD DATA INPATH '/user/ingenieroandresangel/datasets/stations_nh.csv'
+OVERWRITE INTO TABLE stations;
+
+
+## Load data into a Hive table as the result of a query
+
+CREATE TABLE stations_query
+(id int, name string, lo float, la float)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+from stations
+INSERT INTO TABLE stations_query
+select id, name, lo, la ;
+
+
+## Load a compressed data file into a Hive table
+create table sample 
+(info string)
+STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/home/ingenieroandresangel/datasets/sample.csv.gz'
+OVERWRITE INTO TABLE sample;
+
+##Update a row in a Hive table
+##Delete a row from a Hive table
+##Insert a new row into a Hive table
+
+
+CREATE TABLE student 
+(id int, name string)
+CLUSTERED BY (id) INTO 2 BUCKETS
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LINES TERMINATED BY '\n'
+STORED AS ORC
+TBLPROPERTIES ("transactional"="true");
+
+
+insert into table student values (1,"andres"),(2,"julieta");
+update student set name="carlos" where id=1;
+delete from student where id=2;
+
+##Join two Hive tables
+## Run a Hive query using Tez
+## Run a Hive query using vectorization
+## Output the execution plan for a Hive query
+## Use a subquery within a Hive query
+## Output data from a Hive query that is totally ordered across multiple reducers
+
+
+
+set hive.execution.engine=tez;
+set hive.vectorized.execution.enabled=true;
+
+
+SELECT 
+cx.customer_fname,
+oit.product_name,
+oit.sales_total,
+oit.total_pro
+FROM orders ord
+INNER JOIN customers cx
+ON ord.order_customer_id=cx.customer_id
+INNER JOIN (
+SELECT 
+p.product_name,
+it.order_item_order_id,
+SUM(it.order_item_subtotal) as sales_total,
+COUNT(*) total_pro
+FROM order_items it
+INNER JOIN products p
+ON it.order_item_product_id= p.product_id
+GROUP BY p.product_name,it.order_item_order_id) oit
+ON ord.order_id=oit.order_item_order_id
+WHERE YEAR(ord.order_date)= 2014
+ORDER BY oit.sales_total DESC
+LIMIT 10;
+
+
+
+
