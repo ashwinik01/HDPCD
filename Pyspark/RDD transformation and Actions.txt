@@ -1,0 +1,12 @@
+map
+flatMap
+reduce
+filter
+reduceByKey
+collect()
+mean()
+show()
+forach() --useless , this is an action not a transformation
+
+
+source info: https://spark.apache.org/docs/latest/rdd-programming-guide.html#resilient-distributed-datasets-rdds
