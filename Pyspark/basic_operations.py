@@ -1,7 +1,8 @@
 training foreach
 
 ## load a file in a RDD from the file system
-fileRDD = sc.textFile(file:///home/maria_dev/files/titanic.csv)
+fileRDD = sc.textFile(file:///home/maria_dev/files/titanic.csv) # read as RDD
+fileList = open("/home/maria_dev/files/titanic.csv").read().splitlines() # read as a list
 
 ## Print method 1
 for i in fileRDD.collect():
