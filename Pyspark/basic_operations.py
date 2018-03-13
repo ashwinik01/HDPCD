@@ -8,11 +8,12 @@ fileList = open("/home/maria_dev/files/titanic.csv").read().splitlines() # read 
 for i in fileRDD.collect():
   print(i)
 
-## Pront method 2
+## Print method 2
 def printer(x):
   print(x)
   
- fileRDD.foreach(printer)
+fileRDD.foreach(printer)
+fileRDD.first()
  
  #Operations map, foreach
  def increasing(x): \
@@ -51,7 +52,30 @@ for i in numbersmap.take(5):
   ### count
  
 
-  
+## storing 
+columns.saveAsTextFile('hdfs:///user/developer/output')
+
+
+------------------------------------------------------
+from pyspark import SparkConf , SparkContext
+
+conf = SparkConf().setAppName('local')
+sc= SparkContext(conf = conf)
+
+sc.setLogLevel("WARN")
+
+fileRDD = sc.textFile('file:///home/cloudera/input/ssa-pop3-eng.csv')
+header = fileRDD.first()
+
+
+info = fileRDD.filter(lambda line: line != header).map(lambda line: line.split(',')) \
+		.map(lambda column: (int(column[0]),int(column[3])))
+
+infogroup = info.groupBy(lambda column: column[0])
+
+print([ (t[0],[i for i in t[1]])  for t in infogroup.take(1)	])
+
+#####################################################################################
 
  
  
