@@ -23,6 +23,14 @@ spark-submit script.py \
     --driver-memory 4g \
     --executor-memory 2g \
     --executor-cores 1 \
+    
+* cloudera:
+sudo -u hdfs spark-submit script.py
+
+* hortonworks:
+
+maria_dev - spark-submit script.py
+    
 
 
 source info: https://spark.apache.org/docs/latest/rdd-programming-guide.html#resilient-distributed-datasets-rdds
