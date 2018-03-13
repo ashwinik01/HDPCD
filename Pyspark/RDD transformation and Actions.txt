@@ -10,8 +10,8 @@ transformation
 Action
 
 reduce
-filter
 reduceByKey
+filter()
 mean()
 foreach() --useless , this is an action not a transformation
 
