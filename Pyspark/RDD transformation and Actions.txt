@@ -1,12 +1,28 @@
-map
-flatMap
+Visualize:
+* show()
+* collect()
+* take()
+
+transformation
+* map
+* flatMap
+
+Action
+
 reduce
 filter
 reduceByKey
-collect()
 mean()
-show()
-forach() --useless , this is an action not a transformation
+foreach() --useless , this is an action not a transformation
+
+
+** execute a job **
+spark-submit script.py \
+    --master yarn-cluster \
+    --num-executors 3 \
+    --driver-memory 4g \
+    --executor-memory 2g \
+    --executor-cores 1 \
 
 
 source info: https://spark.apache.org/docs/latest/rdd-programming-guide.html#resilient-distributed-datasets-rdds
