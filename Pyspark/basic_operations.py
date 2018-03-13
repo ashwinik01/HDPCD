@@ -26,5 +26,32 @@ newRDD = sc.parallelize(newlist)
 newlist = numberslist.map(lambda x: x + 2)
 newlist.foreach(printer)
 
+############################# March 12
+
+from pyspark import SparkConf, SparkContext
+
+conf= SparkConf().SetAppName('local')
+sc = SparkContext (conf = conf)
+
+fileRDD = sc.textFile('file:///home/cloudera/input/OD_2017-11.csv')
+
+  ### map
+columns = fileRDD.map(lambda x: x.split(',')).map(lambda y : y[0])
+columnsdate = columns.filter(lambda x:  'start_date' != x).map(lambda y: (y,1))
+numbersflat = columns.flatMap(lambda number: number.split("-"))
+numbersmap = columns.map(lambda number: number.split("-"))
+
+for i in numbersflat.take(5):
+	print (i)
+
+for i in numbersmap.take(5):
+	print (i)
+
+  
+  ### count
+ 
+
+  
+
  
  
